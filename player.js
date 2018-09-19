@@ -7,9 +7,6 @@ class Player {
 		// Set the player's board position.
 		this.boardX = tileSize;
 		this.boardY = tileSize * 2;
-		if(game.players.length > 0) {
-			this.boardX += (gridLength + 1) * tileSize;
-		}
 		
 		// Create the player's grid.
 		this.grid = [];
@@ -22,14 +19,20 @@ class Player {
 		
 		// Create the player's ships.
 		this.ships = [];
-		new Ship(this, shipType4);
-		new Ship(this, shipType4);
-		new Ship(this, shipType3);
-		new Ship(this, shipType3);
-		new Ship(this, shipType2);
-		new Ship(this, shipType2);
+		new Ship(this, game.shipType4);
+		new Ship(this, game.shipType4);
+		new Ship(this, game.shipType3);
+		new Ship(this, game.shipType3);
+		new Ship(this, game.shipType2);
+		new Ship(this, game.shipType2);
 		
-		game.players.push(this);
+		// Where they're going to shoot.
+		this.targetX = 0;
+		this.targetY = 0;
+		this.targetDestX = 0;
+		this.targetDestY = 0;
+		
+		this.otherPlayer = null;
 	}
 	
 	AIPlaceShips() {
@@ -45,6 +48,30 @@ class Player {
 		}
 	}
 	
+	AIChooseTarget() {
+		let found = false;
+		while(!found) {
+			this.targetX = randomInt(0, gridLength - 1);
+			this.targetY = randomInt(0, gridLength - 1);
+			if(this.canTarget())
+			{
+				found = true;
+			}
+		}
+		this.targetDestX = this.targetX;
+		this.targetDestY = this.targetY;
+		this.targetX = this.targetY = Math.floor(gridLength / 2);
+	}
+	
+	canTarget() {
+		let ship = this.otherPlayer.grid[this.targetX][this.targetY];
+		if(ship instanceof Ship) {
+			return !ship.sunk;
+		} else {
+			return (ship !== 1);
+		}
+	}
+	
 	takeHit(x, y) {
 		let ship = this.grid[x][y];
 		if(ship instanceof Ship) {
@@ -54,4 +81,16 @@ class Player {
 		}
 	}
 	
+	checkIfLost() {
+		for(let ship of this.ships) {
+			if(!ship.sunk) {
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	inGridBounds(x, y) {
+		return x >= 0 && y >= 0 && x < gridLength && y < gridLength;
+	}
 }

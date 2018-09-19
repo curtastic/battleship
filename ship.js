@@ -8,6 +8,7 @@ class Ship {
 		this.type = type;
 		this.x = 0;
 		this.y = 0;
+		this.placing = false;
 		this.inGrid = false;
 		this.vertical = false;
 		this.sunk = false;
@@ -18,7 +19,7 @@ class Ship {
 		let y = this.y;
 		
 		for(let add = 0; add < this.type.length; add++) {
-			if(!inGridBounds(x, y)) {
+			if(!this.player.inGridBounds(x, y)) {
 				return false;
 			}
 			
@@ -53,37 +54,44 @@ class Ship {
 		}
 		
 		this.inGrid = true;
+		this.placing = false;
 	}
 	
-	draw() {
-		game.context.save();
-		if(this === game.shipPlacing) {
-			game.context.globalAlpha = Math.sin(Date.now() / 80) * .3 + .5;
+	draw(context) {
+		context.save();
+		
+		// Make the ship you're placing blink.
+		if(this.placing) {
+			context.globalAlpha = Math.sin(Date.now() / 80) * .3 + .5;
 		}
 		
-		game.context.translate((this.x+ .5) * tileSize, (this.y + .5) * tileSize);
+		// Rotate ships that are vertical.
+		context.translate((this.x+ .5) * tileSize, (this.y + .5) * tileSize);
 		if(this.vertical) {
-			game.context.rotate(Math.PI / 2);
+			context.rotate(Math.PI / 2);
 		}
 		
-		game.context.drawImage(this.type.image, -tileSize / 2, -tileSize / 2);
+		// Draw the ship image.
+		context.drawImage(this.type.image, -tileSize / 2, -tileSize / 2);
 		
-		if(this === game.shipPlacing) {
+		// Show if you can place the ship here.
+		if(this.placing) {
 			if(!this.canPlace()) {
-				game.context.globalAlpha = .3;
-				game.context.fillStyle = '#C00';
-				game.context.fillRect(-tileSize / 2, -tileSize / 2, this.type.length * tileSize, tileSize);
+				context.globalAlpha = .3;
+				context.fillStyle = '#C00';
+				context.fillRect(-tileSize / 2, -tileSize / 2, this.type.length * tileSize, tileSize);
 			}
-			game.context.globalAlpha = 1;
+			context.globalAlpha = 1;
 		}
 		
+		// Show sunken ships as red.
 		if(this.sunk) {
-			game.context.globalAlpha = .5;
-			game.context.fillStyle = '#C00';
-			game.context.fillRect(-tileSize / 2, -tileSize / 2, this.type.length * tileSize, tileSize);
+			context.globalAlpha = .5;
+			context.fillStyle = '#C00';
+			context.fillRect(-tileSize / 2, -tileSize / 2, this.type.length * tileSize, tileSize);
 		}
 		
-		game.context.restore();
+		context.restore();
 	}
 }
 
