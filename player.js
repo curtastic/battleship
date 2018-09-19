@@ -20,6 +20,7 @@ class Player {
 			}
 		}
 		
+		// Create the player's ships.
 		this.ships = [];
 		new Ship(this, shipType4);
 		new Ship(this, shipType4);
@@ -31,7 +32,17 @@ class Player {
 		game.players.push(this);
 	}
 	
-	inGridBounds(x, y) {
-		return x >= 0 && y >= 0 && x < gridLength && y < gridLength;
+	AIPlaceShips() {
+		for(let ship of this.ships) {
+			while(!ship.inGrid) {
+				ship.x = randomInt(0, gridLength - 1);
+				ship.y = randomInt(0, gridLength - 1);
+				ship.vertical = (randomInt(0, 1) == 1);
+				if(ship.canPlace()) {
+					ship.place();
+				}
+			}
+		}
 	}
+	
 }

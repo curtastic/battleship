@@ -17,11 +17,14 @@ class Game {
 		this.enemy = null;
 		this.waterImage = new Image();
 		this.waterImage.src = 'images/water.png';
+		this.crosshairImage = new Image();
+		this.crosshairImage.src = 'images/crosshair.png';
 		
 		this.mouseX = 0;
 		this.mouseY = 0;
 		
 		this.statePlaceShips = 1;
+		this.stateChooseTarget = 2;
 		this.state = this.statePlaceShips;
 		this.shipPlacing = null;
 	}
@@ -86,6 +89,11 @@ class Game {
 					break;
 				}
 			}
+			
+			if(!this.shipPlacing) {
+				this.enemy.AIPlaceShips();
+				this.state = this.stateChooseTarget;
+			}
 		}
 	}
 	
@@ -130,9 +138,9 @@ class Game {
 			this.context.fillRect(x * tileSize, 0, 1, gridLength * tileSize);
 		}
 		
-		if(this.shipPlacing) {
-			let gridX = Math.floor((this.mouseX - this.you.boardX) / tileSize);
-			let gridY = Math.floor((this.mouseY - this.you.boardY) / tileSize);
+		if(this.shipPlacing && player == this.you) {
+			let gridX = Math.floor((this.mouseX - player.boardX) / tileSize);
+			let gridY = Math.floor((this.mouseY - player.boardY) / tileSize);
 			if(gridX < 0) {
 				gridX = 0;
 			}
@@ -163,8 +171,35 @@ class Game {
 			}
 		}
 		
+		if(this.state == this.stateChooseTarget && player == this.enemy) {
+			let gridX = Math.floor((this.mouseX - player.boardX) / tileSize);
+			let gridY = Math.floor((this.mouseY - player.boardY) / tileSize);
+			
+			if(gridX < 0) {
+				gridX = 0;
+			} else if(gridX > gridLength - 1) {
+				gridX = gridLength - 1;
+			}
+			
+			if(gridY < 0) {
+				gridY = 0;
+			} else if(gridY > gridLength - 1) {
+				gridY = gridLength - 1;
+			}
+			
+			this.context.drawImage(this.crosshairImage, gridX * tileSize, gridY * tileSize);
+		}
+		
 		this.context.restore();
 	}
+}
+
+const randomInt = (low, high) => {
+	return Math.floor(Math.random() * (high - low + 1) + low);
+}
+
+const inGridBounds = (x, y) => {
+	return x >= 0 && y >= 0 && x < gridLength && y < gridLength;
 }
 
 let game = new Game();

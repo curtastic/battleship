@@ -17,7 +17,7 @@ class Ship {
 		let y = this.y;
 		
 		for(let add = 0; add < this.type.length; add++) {
-			if(!this.player.inGridBounds(x, y)) {
+			if(!inGridBounds(x, y)) {
 				return false;
 			}
 			
