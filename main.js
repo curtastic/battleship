@@ -1,5 +1,6 @@
 "use strict";
 
+// Images are 25x25 pixel art. The canvas scales up to fit the screen.
 const tileSize = 25;
 const gridLength = 9;
 const canvasWidth = tileSize * (gridLength + 1) * 2;
@@ -27,16 +28,13 @@ class Game {
 	
 	setup() {
 
-		window.onresize = game.resize.bind(game);
+		window.onresize = this.resize.bind(game);
 
 		window.addEventListener("mousemove", (ev) => {
-			game.mouseX = ev.clientX / canvasPixelSize;
-			game.mouseY = ev.clientY / canvasPixelSize;
+			this.mousemove(ev.clientX, ev.clientY);
 		});
 
-		window.addEventListener("mouseup", (ev) => {
-			game.mouseup();
-		});
+		window.addEventListener("mouseup", this.mouseup.bind(this));
 		
 		this.you = new Player("You");
 		this.enemy = new Player("Opponent");
@@ -53,18 +51,29 @@ class Game {
 	}
 	
 	resize() {
-		if(window.innerWidth / window.innerHeight > canvasSizeRatio)
-		{
+		if(window.innerWidth / window.innerHeight > canvasSizeRatio) {
 			this.canvas.style.width = window.innerHeight * canvasSizeRatio + 'px';
 			this.canvas.style.height = "100%";
 			canvasPixelSize = window.innerHeight / canvasHeight;
-		}
-		else
-		{
+		} else {
 			this.canvas.style.width = "100%";
 			this.canvas.style.height = window.innerWidth / canvasSizeRatio + 'px';
 			canvasPixelSize = window.innerWidth / canvasWidth;
 		}
+	}
+	
+	mousemove(x, y) {
+		x /= canvasPixelSize;
+		y /= canvasPixelSize;
+		if(this.shipPlacing && Math.abs(y - this.mouseY) + Math.abs(x - this.mouseX) > 5) {
+			if(Math.abs(y - this.mouseY) > Math.abs(x - this.mouseX)) {
+				this.shipPlacing.vertical = true;
+			} else {
+				this.shipPlacing.vertical = false;
+			}
+		}
+		this.mouseX = x;
+		this.mouseY = y;
 	}
 	
 	mouseup() {
@@ -130,27 +139,27 @@ class Game {
 			if(gridY < 0) {
 				gridY = 0;
 			}
-			if(gridX >= gridLength - this.shipPlacing.type.length) {
-				gridX = gridLength - this.shipPlacing.type.length;
+			let width = 1;
+			let height = 1;
+			if(this.shipPlacing.vertical) {
+				height = this.shipPlacing.type.length;
+			} else {
+				width = this.shipPlacing.type.length;
+			}
+			if(gridX >= gridLength - width) {
+				gridX = gridLength - width;
+			}
+			if(gridY >= gridLength - height) {
+				gridY = gridLength - height;
 			}
 			this.shipPlacing.x = gridX;
 			this.shipPlacing.y = gridY;
 		}
 		
+		// Draw ships.
 		for(let ship of player.ships) {
 			if(ship.inGrid || ship == this.shipPlacing) {
-				if(ship == this.shipPlacing) {
-					this.context.globalAlpha = Math.sin(Date.now() / 80) * .3 + .5;
-				}
-				this.context.drawImage(ship.type.image, ship.x * tileSize, ship.y * tileSize);
-				if(ship == this.shipPlacing) {
-					if(!ship.canPlace()) {
-						this.context.globalAlpha = .3;
-						this.context.fillStyle = '#C00';
-						this.context.fillRect(ship.x * tileSize, ship.y * tileSize, ship.type.length * tileSize, tileSize);
-					}
-					this.context.globalAlpha = 1;
-				}
+				ship.draw();
 			}
 		}
 		
