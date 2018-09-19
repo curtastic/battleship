@@ -10,6 +10,7 @@ class Ship {
 		this.y = 0;
 		this.inGrid = false;
 		this.vertical = false;
+		this.sunk = false;
 	}
 	
 	canPlace() {
@@ -56,7 +57,7 @@ class Ship {
 	
 	draw() {
 		game.context.save();
-		if(this == game.shipPlacing) {
+		if(this === game.shipPlacing) {
 			game.context.globalAlpha = Math.sin(Date.now() / 80) * .3 + .5;
 		}
 		
@@ -67,7 +68,7 @@ class Ship {
 		
 		game.context.drawImage(this.type.image, -tileSize / 2, -tileSize / 2);
 		
-		if(this == game.shipPlacing) {
+		if(this === game.shipPlacing) {
 			if(!this.canPlace()) {
 				game.context.globalAlpha = .3;
 				game.context.fillStyle = '#C00';
@@ -75,6 +76,13 @@ class Ship {
 			}
 			game.context.globalAlpha = 1;
 		}
+		
+		if(this.sunk) {
+			game.context.globalAlpha = .5;
+			game.context.fillStyle = '#C00';
+			game.context.fillRect(-tileSize / 2, -tileSize / 2, this.type.length * tileSize, tileSize);
+		}
+		
 		game.context.restore();
 	}
 }

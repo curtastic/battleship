@@ -3,8 +3,8 @@
 // Images are 25x25 pixel art. The canvas scales up to fit the screen.
 const tileSize = 25;
 const gridLength = 9;
-const canvasWidth = tileSize * (gridLength + 1) * 2;
-const canvasHeight = tileSize * (gridLength + 1);
+const canvasWidth = tileSize * ((gridLength + 1) * 2 + 1);
+const canvasHeight = tileSize * (gridLength + 3);
 const canvasSizeRatio = canvasWidth / canvasHeight;
 let canvasPixelSize = 0;
 
@@ -15,13 +15,21 @@ class Game {
 		this.players = [];
 		this.you = null;
 		this.enemy = null;
+		
 		this.waterImage = new Image();
 		this.waterImage.src = 'images/water.png';
+		
 		this.crosshairImage = new Image();
 		this.crosshairImage.src = 'images/crosshair.png';
 		
+		this.craterImage = new Image();
+		this.craterImage.src = 'images/crater.png';
+		
 		this.mouseX = 0;
 		this.mouseY = 0;
+		
+		this.targetX = 0;
+		this.targetY = 0;
 		
 		this.statePlaceShips = 1;
 		this.stateChooseTarget = 2;
@@ -94,6 +102,11 @@ class Game {
 				this.enemy.AIPlaceShips();
 				this.state = this.stateChooseTarget;
 			}
+			
+		} else if(this.state === this.stateChooseTarget) {
+			if(this.enemy.grid[this.targetX][this.targetY] !== 1) {
+				this.enemy.takeHit(this.targetX, this.targetY);
+			}
 		}
 	}
 	
@@ -105,6 +118,16 @@ class Game {
 		{
 			this.drawGrid(player);
 		}
+		
+		this.context.fillStyle = "#222";
+		this.context.textAlign = 'center';
+		this.context.textBaseline = 'middle';
+		this.context.font = 'bold 20px Courier';
+		if(this.state === this.statePlaceShips) {
+			this.context.fillText("Place Your Ships", canvasWidth / 2, tileSize / 2);
+		} else if(this.state === this.stateChooseTarget) {
+			this.context.fillText("Choose Target", canvasWidth / 2, tileSize / 2);
+		}
 	}
 	
 	drawGrid(player) {
@@ -115,11 +138,15 @@ class Game {
 		for(let y = 0; y < gridLength; y++) {
 			for(let x = 0; x < gridLength; x++) {
 				this.context.drawImage(this.waterImage, x * tileSize, y * tileSize);
+				if(player.grid[x][y] === 1) {
+					this.context.drawImage(this.craterImage, x * tileSize, y * tileSize);
+				}
 			}
 		}
 		
 		// Draw grid labels.
-		this.context.fillStyle = '#000';
+		this.context.font = '14px Courier';
+		this.context.fillStyle = '#666';
 		this.context.textAlign = 'center';
 		this.context.textBaseline = 'middle';
 		const charCodeA = "A".charCodeAt(0);
@@ -131,6 +158,7 @@ class Game {
 		}
 		
 		// Draw grid lines.
+		this.context.fillStyle = '#000';
 		for(let y = 0; y <= gridLength; y++) {
 			this.context.fillRect(0, y * tileSize, gridLength * tileSize, 1);
 		}
@@ -138,7 +166,8 @@ class Game {
 			this.context.fillRect(x * tileSize, 0, 1, gridLength * tileSize);
 		}
 		
-		if(this.shipPlacing && player == this.you) {
+		// Position the ship you're placing.
+		if(this.shipPlacing && player === this.you) {
 			let gridX = Math.floor((this.mouseX - player.boardX) / tileSize);
 			let gridY = Math.floor((this.mouseY - player.boardY) / tileSize);
 			if(gridX < 0) {
@@ -166,12 +195,15 @@ class Game {
 		
 		// Draw ships.
 		for(let ship of player.ships) {
-			if(ship.inGrid || ship == this.shipPlacing) {
-				ship.draw();
+			if(ship.inGrid || ship === this.shipPlacing) {
+				if(ship.player === this.you || ship.sunk) {
+					ship.draw();
+				}
 			}
 		}
 		
-		if(this.state == this.stateChooseTarget && player == this.enemy) {
+		// Draw the crosshair.
+		if(this.state === this.stateChooseTarget && player === this.enemy) {
 			let gridX = Math.floor((this.mouseX - player.boardX) / tileSize);
 			let gridY = Math.floor((this.mouseY - player.boardY) / tileSize);
 			
@@ -188,6 +220,8 @@ class Game {
 			}
 			
 			this.context.drawImage(this.crosshairImage, gridX * tileSize, gridY * tileSize);
+			this.targetX = gridX;
+			this.targetY = gridY;
 		}
 		
 		this.context.restore();
