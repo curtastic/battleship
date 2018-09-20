@@ -3,6 +3,8 @@
 class Player {
 	constructor(name) {
 		this.name = name;
+		this.ships = [];
+		this.otherPlayer = null;
 		
 		// Set the player's board position.
 		this.boardX = tileSize;
@@ -17,26 +19,20 @@ class Player {
 			}
 		}
 		
-		// Create the player's ships.
-		this.ships = [];
-		new Ship(this, game.shipType4);
-		new Ship(this, game.shipType4);
-		new Ship(this, game.shipType3);
-		new Ship(this, game.shipType3);
-		new Ship(this, game.shipType2);
-		new Ship(this, game.shipType2);
-		
 		// Where they're going to shoot.
 		this.targetX = 0;
 		this.targetY = 0;
 		this.targetDestX = 0;
 		this.targetDestY = 0;
-		
-		this.otherPlayer = null;
+	}
+	
+	makeShip(type) {
+		new Ship(this, type);
 	}
 	
 	AIPlaceShips() {
 		for(let ship of this.ships) {
+			// Find a random spot that the ship can be.
 			while(!ship.inGrid) {
 				ship.x = randomInt(0, gridLength - 1);
 				ship.y = randomInt(0, gridLength - 1);
@@ -49,6 +45,7 @@ class Player {
 	}
 	
 	AIChooseTarget() {
+		//Choose a random spot to shoot.
 		let found = false;
 		while(!found) {
 			this.targetX = randomInt(0, gridLength - 1);
@@ -58,6 +55,8 @@ class Player {
 				found = true;
 			}
 		}
+		
+		// Make the crosshair go from the center of the grid to this target.
 		this.targetDestX = this.targetX;
 		this.targetDestY = this.targetY;
 		this.targetX = this.targetY = Math.floor(gridLength / 2);
@@ -65,18 +64,24 @@ class Player {
 	
 	canTarget() {
 		let ship = this.otherPlayer.grid[this.targetX][this.targetY];
+		
 		if(ship instanceof Ship) {
+			// If there's a ship here, you can target it if it's not already sunk.
 			return !ship.sunk;
 		} else {
-			return (ship !== 1);
+			// If there's no ship here, you can target it if you haven't already shot here.
+			return (ship === 0);
 		}
 	}
 	
 	takeHit(x, y) {
 		let ship = this.grid[x][y];
+		
 		if(ship instanceof Ship) {
+			// If there's a ship here, sink it.
 			ship.sunk = true;
 		} else {
+			// Otherwise mark it as already shot here.
 			this.grid[x][y] = 1;
 		}
 	}

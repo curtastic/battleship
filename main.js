@@ -2,11 +2,12 @@
 
 // Images are 25x25 pixel art. The canvas scales up to fit the screen.
 const tileSize = 25;
+// Each player has an 8x8 grid.
 const gridLength = 8;
+// Canvas is wide enough for 2 grids plus margin.
 const canvasWidth = tileSize * ((gridLength + 1) * 2 + 1);
 const canvasHeight = tileSize * (gridLength + 3);
 const canvasSizeRatio = canvasWidth / canvasHeight;
-let canvasPixelSize = 0;
 
 const randomInt = (low, high) => {
 	return Math.floor(Math.random() * (high - low + 1) + low);
@@ -16,11 +17,16 @@ class Game {
 	constructor() {
 		this.canvas = null;
 		this.context = null;
+		this.canvasPixelSize = 0;
 		this.players = [];
 		this.you = null;
 		this.enemy = null;
 		this.loops = 0;
 		
+		this.mouseX = 0;
+		this.mouseY = 0;
+		
+		// Game images.
 		this.waterImage = new Image();
 		this.waterImage.src = 'images/water.png';
 		
@@ -30,9 +36,7 @@ class Game {
 		this.craterImage = new Image();
 		this.craterImage.src = 'images/crater.png';
 		
-		this.mouseX = 0;
-		this.mouseY = 0;
-		
+		// Make game states.
 		this.statePlaceShips = 1;
 		this.stateChooseTarget = 2;
 		this.stateEnemyChooseTarget = 3;
@@ -40,6 +44,7 @@ class Game {
 		this.stateLose = 5;
 		this.state = this.statePlaceShips;
 		
+		// Make ship types.
 		this.shipPlacing = null;
 		this.shipType2 = new ShipType("GunBoat", "ship2.png", 2);
 		this.shipType3 = new ShipType("Destroyer", "ship3.png", 3);
@@ -51,13 +56,31 @@ class Game {
 	setup() {
 
 		// Setup input events.
-		window.onresize = this.resize.bind(game);
+		window.onresize = this.resize.bind(this);
 
 		window.addEventListener("mousemove", (ev) => {
-			this.mousemove(ev.clientX, ev.clientY);
+			this.setMousePosition(ev.clientX, ev.clientY);
 		});
+		document.addEventListener("touchmove", (ev) => {
+			const touch = ev.changedTouches[0];
+			this.setMousePosition(touch.clientX, touch.clientY);
+			ev.preventDefault();
+			return false;
+		}, { passive: false });
 
-		window.addEventListener("mouseup", this.mouseup.bind(this));
+		window.addEventListener("mouseup", this.mouseUp.bind(this));
+		document.addEventListener("touchend", (ev) => {
+			const touch = ev.changedTouches[0];
+			this.setMousePosition(touch.clientX, touch.clientY);
+			this.mouseUp();
+		});
+		
+		document.addEventListener("touchstart", (ev) => {
+			const touch = ev.changedTouches[0];
+			this.setMousePosition(touch.clientX, touch.clientY);
+			ev.preventDefault();
+			return false;
+		}, { passive: false });
 		
 		// Make players.
 		this.you = new Player("You");
@@ -69,6 +92,16 @@ class Game {
 		
 		this.you.otherPlayer = this.enemy;
 		this.enemy.otherPlayer = this.you;
+		
+		// Each player gets 2 ships of each type.
+		for(let player of this.players) {
+			player.makeShip(this.shipType4);
+			player.makeShip(this.shipType4);
+			player.makeShip(this.shipType3);
+			player.makeShip(this.shipType3);
+			player.makeShip(this.shipType2);
+			player.makeShip(this.shipType2);
+		}
 		
 		// Setup canvas.
 		this.canvas = mainCanvas;
@@ -84,20 +117,27 @@ class Game {
 	}
 	
 	resize() {
+		// Make the canvas as large as we can in the current screen size.
 		if(window.innerWidth / window.innerHeight > canvasSizeRatio) {
 			this.canvas.style.width = window.innerHeight * canvasSizeRatio + 'px';
 			this.canvas.style.height = "100%";
-			canvasPixelSize = window.innerHeight / canvasHeight;
+			this.canvasPixelSize = window.innerHeight / canvasHeight;
 		} else {
 			this.canvas.style.width = "100%";
 			this.canvas.style.height = window.innerWidth / canvasSizeRatio + 'px';
-			canvasPixelSize = window.innerWidth / canvasWidth;
+			this.canvasPixelSize = window.innerWidth / canvasWidth;
 		}
+		
+		window.scrollTo(0, 0);
 	}
 	
-	mousemove(x, y) {
-		x /= canvasPixelSize;
-		y /= canvasPixelSize;
+	setMousePosition(x, y) {
+		// Convert screen pixels to game canvas pixels.
+		x -= mainCanvas.offsetLeft;
+		x /= this.canvasPixelSize;
+		y /= this.canvasPixelSize;
+		
+		// Move mouse to switch the direction of the ship you're placing.
 		if(this.shipPlacing && Math.abs(y - this.mouseY) + Math.abs(x - this.mouseX) > 5) {
 			if(Math.abs(y - this.mouseY) > Math.abs(x - this.mouseX)) {
 				this.shipPlacing.vertical = true;
@@ -105,14 +145,18 @@ class Game {
 				this.shipPlacing.vertical = false;
 			}
 		}
+		
 		this.mouseX = x;
 		this.mouseY = y;
 	}
 	
-	mouseup() {
+	mouseUp() {
 		if(this.shipPlacing) {
+			// Click to place a ship.
 			this.shipPlacing.place();
 			this.shipPlacing = null;
+			
+			// Start placing the next ship.
 			for(let ship of this.you.ships) {
 				if(!ship.inGrid) {
 					this.shipPlacing = ship;
@@ -121,12 +165,15 @@ class Game {
 				}
 			}
 			
+			// You placed all your ships.
 			if(!this.shipPlacing) {
 				this.enemy.AIPlaceShips();
 				this.state = this.stateChooseTarget;
 			}
 			
 		} else if(this.state === this.stateChooseTarget) {
+			
+			// Choose target to shoot.
 			if(this.you.canTarget()) {
 				this.enemy.takeHit(this.you.targetX, this.you.targetY);
 				if(this.enemy.checkIfLost()) {
@@ -211,7 +258,7 @@ class Game {
 			this.you.targetX = gridX;
 			this.you.targetY = gridY;
 		} else {
-			// The enemy moves the target to its destination.
+			// The enemy moves the target to its destination, not too fast.
 			if(this.loops % 14 === 0) {
 				this.enemy.targetX += Math.sign(this.enemy.targetDestX - this.enemy.targetX);
 				this.enemy.targetY += Math.sign(this.enemy.targetDestY - this.enemy.targetY);
@@ -230,7 +277,7 @@ class Game {
 	draw() {
 		// Clear the canvas.
 		this.context.fillStyle = "#89A";
-		this.context.fillRect(0, 0, canvasWidth, canvasHeight);
+		this.context.clearRect(0, 0, canvasWidth, canvasHeight);
 		
 		// Draw player grids.
 		for(let player of this.players)
@@ -330,4 +377,4 @@ class Game {
 	
 }
 
-let game = new Game();
+new Game();

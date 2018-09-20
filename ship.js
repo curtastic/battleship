@@ -18,11 +18,15 @@ class Ship {
 		let x = this.x;
 		let y = this.y;
 		
+		// Check all of the grid tiles that this ship would occupy.
 		for(let add = 0; add < this.type.length; add++) {
+			
+			// The ship is off the grid.
 			if(!this.player.inGridBounds(x, y)) {
 				return false;
 			}
 			
+			// There's already something here.
 			if(this.player.grid[x][y]) {
 				return false;
 			}
@@ -44,6 +48,7 @@ class Ship {
 		let x = this.x;
 		let y = this.y;
 		
+		// Set all tiles that this ship occupies to point to this ship.
 		for(let add = 0; add < this.type.length; add++) {
 			this.player.grid[x][y] = this;
 			if(this.vertical) {
