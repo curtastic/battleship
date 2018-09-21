@@ -1,18 +1,5 @@
 "use strict";
 
-// Images are 25x25 pixel art. The canvas scales up to fit the screen.
-const tileSize = 25;
-// Each player has an 8x8 grid.
-const gridLength = 8;
-// Canvas is wide enough for 2 grids plus margin.
-const canvasWidth = tileSize * ((gridLength + 1) * 2 + 1);
-const canvasHeight = tileSize * (gridLength + 3);
-const canvasSizeRatio = canvasWidth / canvasHeight;
-
-const randomInt = (low, high) => {
-	return Math.floor(Math.random() * (high - low + 1) + low);
-}
-
 class Game {
 	constructor() {
 		this.canvas = null;
@@ -33,8 +20,11 @@ class Game {
 		this.crosshairImage = new Image();
 		this.crosshairImage.src = 'images/crosshair.png';
 		
-		this.craterImage = new Image();
-		this.craterImage.src = 'images/crater.png';
+		this.hitImage = new Image();
+		this.hitImage.src = 'images/crater.png';
+		
+		this.missImage = new Image();
+		this.missImage.src = 'images/miss.png';
 		
 		// Make game states.
 		this.statePlaceShips = 1;
@@ -221,9 +211,9 @@ class Game {
 		let width = 1;
 		let height = 1;
 		if(this.shipPlacing.vertical) {
-			height = this.shipPlacing.type.length;
+			height = this.shipPlacing.type.size;
 		} else {
-			width = this.shipPlacing.type.length;
+			width = this.shipPlacing.type.size;
 		}
 		if(gridX >= gridLength - width) {
 			gridX = gridLength - width;
@@ -323,13 +313,10 @@ class Game {
 		this.context.save();
 		this.context.translate(player.boardX, player.boardY);
 		
-		// Draw grid background.
+		// Draw grid background (water)
 		for(let y = 0; y < gridLength; y++) {
 			for(let x = 0; x < gridLength; x++) {
 				this.context.drawImage(this.waterImage, x * tileSize, y * tileSize);
-				if(player.grid[x][y] === 1) {
-					this.context.drawImage(this.craterImage, x * tileSize, y * tileSize);
-				}
 			}
 		}
 		
@@ -358,8 +345,29 @@ class Game {
 		// Draw ships.
 		for(let ship of player.ships) {
 			if(ship.inGrid || ship === this.shipPlacing) {
-				if(ship.player === this.you || ship.sunk) {
+				if(ship.player === this.you || ship.health <= 0) {
 					ship.draw(this.context);
+				}
+			}
+		}
+		
+		// Draw grid foreground (missile craters)
+		for(let y = 0; y < gridLength; y++) {
+			for(let x = 0; x < gridLength; x++) {
+				let tile = player.grid[x][y];
+				if(tile.hit) {
+					if(tile.ship === null) {
+						this.context.drawImage(this.missImage, x * tileSize, y * tileSize);
+					} else {
+						if(tile.ship.health <= 0) {
+							this.context.drawImage(this.hitImage, x * tileSize, y * tileSize);
+						} else {
+							// Animate the ships that are on fire.
+							let size = tileSize * (1 + Math.sin(Date.now() / 80) * .1);
+							let sizeChange =  (tileSize - size) / 2;
+							this.context.drawImage(this.hitImage, x * tileSize + sizeChange, y * tileSize + sizeChange, size, size);
+						}
+					}
 				}
 			}
 		}
@@ -376,5 +384,19 @@ class Game {
 	}
 	
 }
+
+// Images are 25x25 pixel art. The canvas scales up to fit the screen.
+const tileSize = 25;
+// Each player has an 8x8 grid.
+const gridLength = 8;
+// Canvas is wide enough for 2 grids plus margin.
+const canvasWidth = tileSize * ((gridLength + 1) * 2 + 1);
+const canvasHeight = tileSize * (gridLength + 3);
+const canvasSizeRatio = canvasWidth / canvasHeight;
+
+const randomInt = (low, high) => {
+	return Math.floor(Math.random() * (high - low + 1) + low);
+}
+
 
 new Game();

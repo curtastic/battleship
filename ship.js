@@ -11,7 +11,9 @@ class Ship {
 		this.placing = false;
 		this.inGrid = false;
 		this.vertical = false;
-		this.sunk = false;
+		
+		// Ship starts at full health.
+		this.health = this.type.size;
 	}
 	
 	canPlace() {
@@ -19,7 +21,7 @@ class Ship {
 		let y = this.y;
 		
 		// Check all of the grid tiles that this ship would occupy.
-		for(let add = 0; add < this.type.length; add++) {
+		for(let add = 0; add < this.type.size; add++) {
 			
 			// The ship is off the grid.
 			if(!this.player.inGridBounds(x, y)) {
@@ -27,7 +29,7 @@ class Ship {
 			}
 			
 			// There's already something here.
-			if(this.player.grid[x][y]) {
+			if(this.player.grid[x][y].ship !== null) {
 				return false;
 			}
 			
@@ -49,8 +51,8 @@ class Ship {
 		let y = this.y;
 		
 		// Set all tiles that this ship occupies to point to this ship.
-		for(let add = 0; add < this.type.length; add++) {
-			this.player.grid[x][y] = this;
+		for(let add = 0; add < this.type.size; add++) {
+			this.player.grid[x][y].ship = this;
 			if(this.vertical) {
 				y++;
 			} else {
@@ -84,16 +86,16 @@ class Ship {
 			if(!this.canPlace()) {
 				context.globalAlpha = .3;
 				context.fillStyle = '#C00';
-				context.fillRect(-tileSize / 2, -tileSize / 2, this.type.length * tileSize, tileSize);
+				context.fillRect(-tileSize / 2, -tileSize / 2, this.type.size * tileSize, tileSize);
 			}
 			context.globalAlpha = 1;
 		}
 		
 		// Show sunken ships as red.
-		if(this.sunk) {
+		if(this.health <= 0) {
 			context.globalAlpha = .5;
 			context.fillStyle = '#C00';
-			context.fillRect(-tileSize / 2, -tileSize / 2, this.type.length * tileSize, tileSize);
+			context.fillRect(-tileSize / 2, -tileSize / 2, this.type.size * tileSize, tileSize);
 		}
 		
 		context.restore();
@@ -101,12 +103,12 @@ class Ship {
 }
 
 class ShipType {
-	constructor(name, filename, length) {
+	constructor(name, filename, size) {
 		this.name = name;
 		
 		this.image = new Image();
 		this.image.src = "images/" + filename;
 		
-		this.length = length;
+		this.size = size;
 	}
 }

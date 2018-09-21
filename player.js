@@ -15,7 +15,7 @@ class Player {
 		for(let x = 0; x < gridLength; x++) {
 			this.grid[x] = [];
 			for(let y = 0; y < gridLength; y++) {
-				this.grid[x][y] = 0;
+				this.grid[x][y] = new Tile();
 			}
 		}
 		
@@ -44,9 +44,42 @@ class Player {
 		}
 	}
 	
+	// Check if there's any ship they've hit so they should try to hit the rest of it to sink it.
+	AIChooseGoodTarget() {
+		for(let x = 0; x < gridLength; x++) {
+			for(let y = 0; y < gridLength; y++) {
+				let tile = this.otherPlayer.grid[x][y];
+				
+				// Find a ship that is hit but not sunk.
+				if(tile.hit && tile.ship !== null && tile.ship.health > 0 && tile.ship.health < tile.ship.type.size) {
+					this.targetX = x;
+					this.targetY = y;
+					
+					// Shoot a random nearby tile in hopes that it hits the rest of the ship.
+					let direction = randomInt(0, 3);
+					if(direction === 0) {
+						this.targetX++;
+					} else if(direction === 1) {
+						this.targetY++;
+					} else if(direction === 2) {
+						this.targetX--;
+					} else if(direction === 3) {
+						this.targetY--;
+					}
+					if(this.canTarget())
+					{
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+	
 	AIChooseTarget() {
-		//Choose a random spot to shoot.
-		let found = false;
+		let found = this.AIChooseGoodTarget();
+		
+		// No good targets, choose a random spot to shoot.
 		while(!found) {
 			this.targetX = randomInt(0, gridLength - 1);
 			this.targetY = randomInt(0, gridLength - 1);
@@ -63,32 +96,28 @@ class Player {
 	}
 	
 	canTarget() {
-		let ship = this.otherPlayer.grid[this.targetX][this.targetY];
-		
-		if(ship instanceof Ship) {
-			// If there's a ship here, you can target it if it's not already sunk.
-			return !ship.sunk;
-		} else {
-			// If there's no ship here, you can target it if you haven't already shot here.
-			return (ship === 0);
+		if(!this.inGridBounds(this.targetX, this.targetY)) {
+			return false;
 		}
+		const tile = this.otherPlayer.grid[this.targetX][this.targetY];
+		return !tile.hit;
 	}
 	
 	takeHit(x, y) {
-		let ship = this.grid[x][y];
+		const tile = this.grid[x][y];
 		
-		if(ship instanceof Ship) {
-			// If there's a ship here, sink it.
-			ship.sunk = true;
-		} else {
-			// Otherwise mark it as already shot here.
-			this.grid[x][y] = 1;
+		// Mark this tile as hit.
+		tile.hit = true;
+		
+		// If there's a ship here, it takes damage.
+		if(tile.ship !== null) {
+			tile.ship.health--;
 		}
 	}
 	
 	checkIfLost() {
 		for(let ship of this.ships) {
-			if(!ship.sunk) {
+			if(ship.health > 0) {
 				return false;
 			}
 		}
@@ -97,5 +126,13 @@ class Player {
 	
 	inGridBounds(x, y) {
 		return x >= 0 && y >= 0 && x < gridLength && y < gridLength;
+	}
+}
+
+
+class Tile {
+	constructor() {
+		this.hit = false;
+		this.ship = null;
 	}
 }
